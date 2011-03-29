@@ -34,4 +34,4 @@
 
 (set-value! a 5 'user)
 (forget-value! a 'user)
-(set-value! a -5 'user)
+(set-value! sq -3 'user)

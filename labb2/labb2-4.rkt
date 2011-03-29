@@ -15,3 +15,6 @@
   (set-mcdr! stream
             (force (mcdr stream)))
   (mcdr stream))
+
+; våran cdr funktion ersätter den funktion som conscellen pekar på med en ny conscell som har värdet av vad beräkningen skulle ge samt beräkningen för cellen därefter.
+; Detta gör att om du skulle utföra 3st cdr på våran ström och sedan utföra 2st cdr på samma ström som innan, så skulle inte värdena behövas beräknas andra gången eftersom dessa redan är beräknade.
