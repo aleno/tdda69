@@ -1,0 +1,113 @@
+
+;;; --------------------------------------------------------------------------
+;;;  streams.%ss
+;;;  Auxiliary stream functions implemented in %Scheme
+;;;
+;;;  Original code from "Structure and Interpretation of Computer Programs"
+;;;  by Abelson & Sussman. Adapted for use in the course "Data and Program
+;;;  Structures" (TDDA69).
+;;; --------------------------------------------------------------------------
+
+;; Note that this code should be loaded into an evaluator for %Scheme
+;; that has defined the following primitives: %cons-stream, %stream-car,
+;; %stream-cdr, %delay, %force, %stream-null? and %the-empty-stream.
+
+;; Stream utility functions
+;; ------------------------
+(remote-eval '(%begin
+                
+(%define (%stream-ref stream n)
+  (%if (%= n 0)
+       (%stream-car stream)
+       (%stream-ref (%stream-cdr stream) (%- n 1))))
+
+(%define (%stream-filter pred stream)
+  (%cond ((%stream-null? stream) %the-empty-stream)
+         ((pred (%stream-car stream))
+	     (%cons-stream (%stream-car stream)
+			   (%stream-filter pred (%stream-cdr stream))))
+          (%else (%stream-filter pred (%stream-cdr stream)))))
+
+(%define (%stream-for-each proc stream)
+  (%if (%stream-null? stream)
+       (%quote done)
+       (%begin (proc (%stream-car stream))
+	       (%stream-for-each proc (%stream-cdr stream)))))
+
+(%define (%stream-enumerate-interval low high)
+  (%if (%> low high)
+       %the-empty-stream
+       (%cons-stream low (%stream-enumerate-interval (%+ low 1) high))))
+
+;; Streams of numbers
+;; ------------------
+
+(%define (%add-streams s1 s2)
+  (%cond
+    ((%stream-null? s1) s2)
+    ((%stream-null? s2) s1)
+    (%else (%cons-stream (%+ (%stream-car s1) (%stream-car s2))
+			 (%add-streams (%stream-cdr s1) (%stream-cdr s2))))))
+
+
+;; Stream I/O
+;; ----------
+
+(%define (%print-stream s n)
+  (%define (iter s n)
+    (%cond ((%stream-null? s) (%display "]"))
+           ((%= n 0) (%display "... ]"))
+	   (%else (%begin (%display (%stream-car s))
+	                  (%display " ")
+			  (iter (%stream-cdr s) (%- n 1))))))
+  (%display "[ ")
+  (iter s n)
+  (%newline))
+
+;; Some tests
+;; ----------
+
+(%define (integers-starting-from n)
+  (%cons-stream n (integers-starting-from (%+ n 1))))
+
+(%define ones (%cons-stream 1 ones))
+
+(%define integers
+  (%cons-stream 1 (%add-streams ones integers)))
+
+(%define fibs
+  (%cons-stream
+    0
+    (%cons-stream
+      1
+      (%add-streams (%stream-cdr fibs)
+                    fibs))))
+
+(%define (%divisible? x y) (%= x (%* y (%round (%/ x y)))))
+
+(%define (%round x)
+  (%define (loop x n)
+     (%if (%> n x) (%- n 1) (loop x (%+ n 1))))
+  (loop x 0))
+
+(%define (sieve stream)
+  (%cons-stream
+    (%stream-car stream)
+    (sieve 
+      (%stream-filter
+        (%lambda (x)
+           (%if (%divisible? 
+                x
+                (%stream-car stream)) %false %true))
+        (%stream-cdr stream)))))
+
+(%define primes 
+   (sieve (integers-starting-from 2)))
+
+;(%begin
+; (%display "The 20 first prime numbers:")
+; (%newline)
+; (%print-stream primes 20)
+; (%quote ok))
+
+))
