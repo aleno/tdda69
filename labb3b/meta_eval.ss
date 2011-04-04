@@ -26,13 +26,19 @@
 (define (cons-stream? exp) 
   (tagged-list? exp '%cons-stream))
 
+(define (defmacro? exp)
+  (tagged-list? exp '%defmacro))
+
+(define (macro? exp)
+  (tagged-list? exp '$macro))
+
 ;;; Core of the evaluator
 ;;; ---------------------
 
 (define (eval-%scheme exp env)
-;  (print "Eval[")
-;  (print exp)
-;  (print "]...")
+  ;(print "Eval[")
+ ; (print exp)
+ ; (print "]...")
   (cond ((self-evaluating? exp) exp)
         ((variable? exp) (lookup-variable-value exp env))
         ((quoted? exp) (text-of-quotation exp))
@@ -54,11 +60,25 @@
          (eval-force exp env))
         ((cons-stream? exp)
          (eval-cons-stream exp env))
+        ((defmacro? exp)
+         (eval-defmacro exp env))
+        ((macro? exp)
+         (eval-macro exp env))
         ((application? exp)
-	 (apply-%scheme (eval-%scheme (operator exp) env)
-			(list-of-values (operands exp) env)))
+         (expand-and-apply exp env))
         (else
          (error 'eval-%scheme "Unknown expression type: ~s" exp))))
+
+(define (expand-and-apply exp env)
+  ; Hämta procedure
+  (let ((proc (eval-%scheme (operator exp) env)))
+    ; Om proc är ett macro expandera och kör!
+    (if (macro? proc)
+        (eval-%scheme (apply-%scheme
+                       (cdr proc)
+                       (operands exp)) env)
+        ; Annars vanlig procedur. :)
+        (apply-%scheme proc (list-of-values (operands exp) env)))))
 
 (define (apply-%scheme procedure arguments)
   (cond ((primitive-procedure? procedure)
@@ -233,7 +253,39 @@
 (remote-eval '(%define (%stream-car stream) (%car stream)))
 (remote-eval '(%define (%stream-cdr stream) (%force (%cdr stream))))
 
-(load "streams.%ss")
+;(load "streams.%ss")
+
+
+;; Labb 3b upg 5
+(define (eval-defmacro exp env)
+  (define-variable! (definition-variable exp)
+    (cons '$macro (eval-%scheme (assignment-value exp) env))
+    env)
+  'ok)
+
+(define (eval-macro exp env)
+  (print (cdr exp))
+  (newline)
+         
+  (eval-%scheme (cdr exp) env))
+(remote-eval '(%defmacro %setq! (%lambda (var value) (%list (%quote %set!) var (%list (%quote %quote) value)))))
+(remote-eval '(%define a 2))
+(remote-eval '(%setq! a (+ 2 5)))
+(remote-eval 'a)
+
+(remote-eval '(%define arb (%lambda args args)))
+;(define (eval-macro exp env))
+
+(remote-eval '(%defmacro %let (%lambda (varlist expr)
+                                    (%cons (%list (%quote %lambda)
+                                                  (%map %car varlist)
+                                                  expr)
+                                                  (%map %cadr varlist)))))
+
+(remote-eval '(%let ((a 3)
+      (b 4)
+      (c 5))
+  (%* a b c)))
 
 ;;; --------------------------------------------------------------------------
 
