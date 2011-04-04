@@ -15,6 +15,15 @@
 ;; Stream utility functions
 ;; ------------------------
 
+(%define %stream-null? %null?)
+(%define (%the-empty-stream?) (%quote))
+(%define (%stream-car stream) (%car stream))
+(%define (%stream-cdr stream) (%force (%cdr stream)))
+
+(%defmacro %cons-stream
+  (%lambda (a b)
+    (%list (%quote %cons) a (%list (%quote %delay) b))))
+
 (%define (%stream-ref stream n)
   (%if (%= n 0)
        (%stream-car stream)
@@ -100,11 +109,11 @@
                 (%stream-car stream)) %false %true))
         (%stream-cdr stream)))))
 
-;(%define primes 
-;   (sieve (integers-starting-from 2)))
+(%define primes 
+   (sieve (integers-starting-from 2)))
 
 (%begin
  (%display "The 20 first prime numbers:")
  (%newline)
- (%print-stream integers 20)
+ (%print-stream primes 20)
  (%quote ok))

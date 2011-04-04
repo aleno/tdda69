@@ -65,8 +65,8 @@
          (eval-delay exp env))
         ((force? exp)
          (eval-force exp env))
-        ((cons-stream? exp)
-         (eval-cons-stream exp env))
+     ;   ((cons-stream? exp)
+     ;    (eval-cons-stream exp env))
         ((defmacro? exp)
          (eval-defmacro exp env))
         ((macro? exp)
@@ -255,10 +255,6 @@
         (b (caddr exp)))
     (eval-%scheme `(%cons ,a (%delay ,b)) env)))
 
-(remote-eval '(%define %stream-null? %null?))
-(remote-eval '(%define (%the-empty-stream?) (%quote)))
-(remote-eval '(%define (%stream-car stream) (%car stream)))
-(remote-eval '(%define (%stream-cdr stream) (%force (%cdr stream))))
 
 ;(load "streams.%ss")
 
@@ -304,7 +300,8 @@
             (%begin
               (%eval-global expr)
               (loop)))))
-    (loop))))
+    (loop)
+    (%quote ok))))
 
 ;;; --------------------------------------------------------------------------
 
