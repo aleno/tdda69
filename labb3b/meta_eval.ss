@@ -32,13 +32,17 @@
 (define (macro? exp)
   (tagged-list? exp '$macro))
 
+;; För %load
+(define (eval? exp)
+  (tagged-list? exp '%eval-global))
+
 ;;; Core of the evaluator
 ;;; ---------------------
 
 (define (eval-%scheme exp env)
-  ;(print "Eval[")
- ; (print exp)
- ; (print "]...")
+;  (print "Eval[")
+;  (print exp)
+;  (print "]...")
   (cond ((self-evaluating? exp) exp)
         ((variable? exp) (lookup-variable-value exp env))
         ((quoted? exp) (text-of-quotation exp))
@@ -52,6 +56,9 @@
         ((begin? exp) 
          (eval-sequence (begin-actions exp) env))
         ((cond? exp) (eval-%scheme (cond->if exp) env))
+        ;; Utökning för att få %load att funka.
+        ((eval? exp)
+         (eval-%scheme (eval-%scheme (cadr exp) env) the-global-environment))
         ((dolist? exp) ;; Utökning uppgift 3
          (eval-dolist exp env))
         ((delay? exp) ;; Utökning uppgift 3
@@ -276,16 +283,28 @@
 (remote-eval '(%define arb (%lambda args args)))
 ;(define (eval-macro exp env))
 
-(remote-eval '(%defmacro %let (%lambda (varlist expr)
-                                    (%cons (%list (%quote %lambda)
-                                                  (%map %car varlist)
-                                                  expr)
-                                                  (%map %cadr varlist)))))
+(remote-eval '(%defmacro %let (%lambda args
+                                       (%cons (%cons (%quote %lambda)
+                                                  (%cons (%map %car (%car args)) (%cdr args)))
+                                                  (%map %cadr (%car args))))))
 
 (remote-eval '(%let ((a 3)
       (b 4)
       (c 5))
+  (%+ a b c)
   (%* a b c)))
+
+;; Laddar %scheme filer från %scheme..
+(remote-eval '(%define (%load fn)
+  (%let ((port (%open-input-file fn)))
+    (%define (loop)
+      (%let ((expr (%read port)))
+        (%if (%eof-object? expr)
+            (%list)
+            (%begin
+              (%eval-global expr)
+              (loop)))))
+    (loop))))
 
 ;;; --------------------------------------------------------------------------
 

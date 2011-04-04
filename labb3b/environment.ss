@@ -167,6 +167,12 @@
         (list '%= =)
         (list '%< <)
         (list '%> >)
+        
+        ;; För %load
+        (list '%open-input-file open-input-file)
+        (list '%eof-object? eof-object?)
+        (list '%read read)
+        
         (list '%newline newline)
         (list '%display display)))
 

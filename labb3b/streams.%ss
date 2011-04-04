@@ -14,8 +14,7 @@
 
 ;; Stream utility functions
 ;; ------------------------
-(remote-eval '(%begin
-                
+
 (%define (%stream-ref stream n)
   (%if (%= n 0)
        (%stream-car stream)
@@ -101,13 +100,11 @@
                 (%stream-car stream)) %false %true))
         (%stream-cdr stream)))))
 
-(%define primes 
-   (sieve (integers-starting-from 2)))
+;(%define primes 
+;   (sieve (integers-starting-from 2)))
 
 (%begin
  (%display "The 20 first prime numbers:")
  (%newline)
- (%print-stream primes 20)
+ (%print-stream integers 20)
  (%quote ok))
-
-))
