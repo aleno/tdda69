@@ -1,0 +1,22 @@
+Uppgift 9: Makroutveckling
+==========================
+
+Deluppgift A
+------------
+
+%let kommer att expanderas 301 ggr. Detta eftersom vi kommer att hoppa igenom funktionen 300ggr och ytterliggare en gång för att vi tycker det är kul att gå ett steg längre för att hitta exit condition.
+
+Deluppgift B
+------------
+
+Det kommer inte att funka eftersom att %define hanteras av eval-definition. Denna funktion kallar define-variable! med första definition-variable av uttrycket ((%gensym (%quote unique)) param1 param2) eftersom detta yttryck aldrig evalueras kommer inte makrot att expanderas till en gilltig form.
+
+Deluppgift C
+------------
+
+Vi kan tillåta denna konstruktion genom att se till att eval-definition expanderar sin definition-variable om det inte är en variabel när den kallar define-variable!.
+
+(if (variable? (definition-variable exp))
+    (definition-variable exp)
+  (eval-%scheme (definition-variable exp) env))
+

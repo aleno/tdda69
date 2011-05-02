@@ -1,0 +1,11 @@
+Uppgift 1: Strömmar i en lat evaluator
+======================================
+
+%cons-stream funkar inte eftersom att %cons är en primitiv procedur, och dessa evaluerar vi alltid argumenten för innan vi kallar dem.
+
+Vår lösning är att implementera %cons som en compound procedure genom att definera följade i %scheme.
+
+(%define (%cons a b) (%lambda (x) (x a b)))
+(%define (%car x) (x (%lambda (a b) a)))
+(%define (%cdr x) (x (%lambda (a b) b)))
+
