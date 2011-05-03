@@ -35,3 +35,11 @@
 (set-value! a 5 'user)
 (forget-value! a 'user)
 (set-value! sq -3 'user)
+
+;; Problemet som kan uppstå om man implementerar den genom
+;; (define (squarer a b)
+;;   (multiplier a a b)) ;; (define (multiplier u v w)..
+
+;; Är att när man ändrar a så kommer multiplier att notera att dess argument u har ändrats och
+;; signalerar då ändringar till v, w. v är kopplat till u vilket kommer ge ytterliggare ett genomslag
+;; vilket inte blir så bra.
