@@ -20,6 +20,9 @@
 (define (ambeval exp env succeed fail)
   ((analyze exp) env succeed fail))
 
+(define (if-fail? exp)
+  (tagged-list? exp '%if-fail))
+
 (define (analyze exp)
   (cond ((self-evaluating? exp) 
          (analyze-self-evaluating exp))
@@ -28,6 +31,7 @@
         ((assignment? exp) (analyze-assignment exp))
         ((definition? exp) (analyze-definition exp))
         ((if? exp) (analyze-if exp))
+        ((if-fail? exp) (analyze-if-fail exp))
         ((lambda? exp) (analyze-lambda exp))
         ((begin? exp) (analyze-sequence (begin-actions exp)))
         ((cond? exp) (analyze (cond->if exp)))
@@ -79,6 +83,18 @@
              ;; failure continuation for evaluating the predicate
              fail))))
 
+;;Uppgift 2
+
+(define (analyze-if-fail exp)
+  (let ((pproc (analyze (cadr exp)))
+        (cproc (analyze (caddr exp))))
+    (lambda (env succeed fail)
+      (pproc env
+             (lambda (val next-alternative)
+               val)
+             (lambda ()
+               (cproc env succeed fail))))))
+             
 (define (analyze-sequence exps)
   (define (sequentially a b)
     (lambda (env succeed fail)
@@ -320,7 +336,8 @@
                (%require (%= (%mod a 2) 0))
                a))
 
-(remote-eval '%(%let ((a1 1)
+;; Uppgift 1
+(remote-eval '(%let ((a1 1)
                      (a2 14)
                      (a3 14)
                      (a4 4)
@@ -352,3 +369,15 @@
                                 (%display (%list c1 c2 c3 c4))
                                 (%display (%list d1 d2 d3 d4))
                                 ))))
+
+;; Uppgift 2
+
+(remote-eval '(%if-fail (%let ((x (%an-element-of (%quote (1 3 5)))))
+                              (%require (%= 0 (%mod x 2)))
+                              x)
+                        (%quote all-odd)))
+
+(remote-eval '(%if-fail (%let ((x (%an-element-of (%quote (1 3 5 8)))))
+                              (%require (%= 0 (%mod x 2)))
+                              x)
+                        (%quote all-odd)))
