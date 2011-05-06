@@ -26,6 +26,8 @@
 (define (permanent-assignment? exp)
   (tagged-list? exp '%permanent-set!))
 
+(define (dolist? exp)
+  (tagged-list? exp '%dolist))
 
 (define (analyze exp)
   (cond ((self-evaluating? exp) 
@@ -37,6 +39,7 @@
         ((definition? exp) (analyze-definition exp))
         ((if? exp) (analyze-if exp))
         ((if-fail? exp) (analyze-if-fail exp))
+        ((dolist? exp) (analyze-dolist exp))
         ((lambda? exp) (analyze-lambda exp))
         ((begin? exp) (analyze-sequence (begin-actions exp)))
         ((cond? exp) (analyze (cond->if exp)))
@@ -119,6 +122,37 @@
         (error 'analyze-sequence "Empty sequence"))
     (loop (car procs) (cdr procs))))
 
+;;; Uppgift 3: %dolist
+;;; ------------------
+
+(define (analyze-dolist exp)
+  (let ((varargs (cadr exp))
+        (list (analyze (cadr (cadr exp))))
+        (res (analyze (caddr (cadr exp))))
+        (exps (analyze-sequence (cdr (cdr exp)))))
+    (lambda (env succeed fail)
+      (define (loop-dolist varlist)
+        (if (null? varlist)
+            (res env succeed fail)
+            (begin
+              (display "x = ")
+              (display (car varlist))
+              (newline)
+              (exps (extend-environment (car varargs)
+                                        (car varlist)
+                                        env)
+                    (lambda (var fail2)
+                      (loop-dolist (cdr varlist)))
+                    fail))))
+      (list env (lambda (value next)
+                  (loop-dolist value)
+                  (next))
+            (lambda ()
+              (display "I've failed...")
+              (fail))
+            
+            ))))
+
 ;;; Definitions and assignments
 ;;; ---------------------------
 
@@ -148,6 +182,8 @@
                                                  env)
                             (fail2)))))
              fail))))
+
+;; Uppgift 2
 
 (define (analyze-permanent-assignment exp)
   (let ((var (assignment-variable exp))
@@ -353,7 +389,7 @@
                a))
 
 ;; Uppgift 1
-(remote-eval '(%let ((a1 1)
+(remote-eval '(%define (foo) (%let ((a1 1)
                      (a2 14)
                      (a3 14)
                      (a4 4)
@@ -384,7 +420,7 @@
                                 (%display (%list b1 b2 b3 b4))
                                 (%display (%list c1 c2 c3 c4))
                                 (%display (%list d1 d2 d3 d4))
-                                ))))
+                                )))))
 
 ;; Uppgift 2
 
@@ -405,3 +441,15 @@
                               (%require (%= 0 (%mod x 2)))
                               x)
                         (%quote all-odd)))
+
+
+;; Uppgift 3: dolist
+
+(remote-eval '(%begin
+               (%define sum 0)
+               (%define count 0)
+               (%display (%dolist (x (%list 2 4 (amb 5 6)) (%display sum))
+                                  (%set! count (%+ count 1))
+                                  (%require (%= (%mod x 2) 0))
+                                  (%set! sum (%+ sum x))))
+               (%display count)))
