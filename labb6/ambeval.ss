@@ -23,12 +23,17 @@
 (define (if-fail? exp)
   (tagged-list? exp '%if-fail))
 
+(define (permanent-assignment? exp)
+  (tagged-list? exp '%permanent-set!))
+
+
 (define (analyze exp)
   (cond ((self-evaluating? exp) 
          (analyze-self-evaluating exp))
         ((quoted? exp) (analyze-quoted exp))
         ((variable? exp) (analyze-variable exp))
         ((assignment? exp) (analyze-assignment exp))
+        ((permanent-assignment? exp) (analyze-permanent-assignment exp))
         ((definition? exp) (analyze-definition exp))
         ((if? exp) (analyze-if exp))
         ((if-fail? exp) (analyze-if-fail exp))
@@ -142,6 +147,17 @@
                                                  old-value
                                                  env)
                             (fail2)))))
+             fail))))
+
+(define (analyze-permanent-assignment exp)
+  (let ((var (assignment-variable exp))
+        (vproc (analyze (assignment-value exp))))
+    (lambda (env succeed fail)
+      (vproc env
+             (lambda (val fail2)        ; *1*
+                 (set-variable-value! var val env)
+                 (succeed 'ok
+                          fail2))
              fail))))
 
 ;;; Procedure applications
@@ -372,6 +388,14 @@
 
 ;; Uppgift 2
 
+(remote-eval '(%begin
+               (%define count 0)
+               (%let ((x (%an-element-of (%quote (a b c))))
+                      (y (%an-element-of (%quote (a b c)))))
+                     (%permanent-set! count (%+ count 1))
+                     (%require (%not (%eq? x y)))
+                     (%list x y count))))
+  
 (remote-eval '(%if-fail (%let ((x (%an-element-of (%quote (1 3 5)))))
                               (%require (%= 0 (%mod x 2)))
                               x)
