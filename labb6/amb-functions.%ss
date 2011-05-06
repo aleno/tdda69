@@ -1,0 +1,39 @@
+
+;;; --------------------------------------------------------------------------
+;;;  amb-functions.%ss
+;;; --------------------------------------------------------------------------
+
+;; Constructs supplementing the non-deterministic evaluator
+(remote-eval '(%begin
+(%define (%require p) (%if (%not p) (amb)))
+
+(%define (%an-element-of items)
+  (%require (%not (%null? items)))
+  (amb (%car items) (%an-element-of (%cdr items))))
+
+;; Prime number checking
+
+(%define (smallest-divisor n)
+  (find-divisor n 2))
+
+(%define (find-divisor n test-divisor)
+  (%cond ((%> (%* test-divisor test-divisor) n) n)
+         ((divides? test-divisor n) test-divisor)
+         (%else (find-divisor n (%+ test-divisor 1)))))
+
+(%define (divides? a b)
+  (%= (%remainder b a) 0))
+
+(%define (prime? n)
+  (%and (%> n 1)
+        (%= n (smallest-divisor n))))
+
+;; Example: Find a pair of numbers that is a prime 
+
+(%define (prime-sum-pair list1 list2)
+  (%let ((a (%an-element-of list1))
+         (b (%an-element-of list2)))
+    (%require (prime? (%+ a b)))
+    (%list a b)))
+
+))
