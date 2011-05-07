@@ -19,11 +19,11 @@
                
 (%define %stream-null? %null?)
 (%define (%the-empty-stream?) (%quote))
-(%define (%stream-car stream) (%car stream))
-(%define (%stream-cdr stream) (%force (%cdr stream)))
+(%define (%stream-car stream) (stream (%lambda (a b) a))) ;%car stream))
+(%define (%stream-cdr stream) (stream (%lambda (a b) b))) ;%cdr stream))
 
-(%define %cons-stream
-         (%cons a b))
+(%define (%cons-stream a (b %lazy-memo))
+         (%lambda (x) (x a b))) ;%cons a b))
 
 (%define (%stream-ref stream n)
   (%if (%= n 0)
