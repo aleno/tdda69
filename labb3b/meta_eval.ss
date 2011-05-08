@@ -130,6 +130,12 @@
                     env)
   'ok)
 
+(define (eval-definition exp env)
+  (define-variable! (definition-variable exp)
+                    (eval-%scheme (definition-value exp) env)
+                    env)
+  'ok)
+
 ;;; Representing procedure objects
 ;;; ------------------------------
 
@@ -156,13 +162,36 @@
 ;;; User interface
 ;;; --------------
 
+;; Macron som ska expanderas
+(define macros '(%let))
+
+;; Expanderar macron i ett uttryck.
+(define (expand-macro exp)
+  (cond
+    ((null? exp) '())
+    ((not (list? exp)) exp)
+    ((eq? (car exp) 'quote) exp)
+    ;; För extra generell lösning kalla eval-%scheme med (car exp) här,
+    ;; och kolla om den är taggad $macro.
+    ((memq (car exp) macros)
+     (apply-%scheme
+      (cdr (eval-%scheme (car exp) the-global-environment))
+      (map expand-macro (cdr exp))))
+    (else
+     (map expand-macro exp))))
+
 (define (driver-loop)
   (newline)
   (display "%==> ")
   (do ((%exp (read)(read)))
-      ((memq %exp '(exit stop logout hej-d�u bye quit break hasta-la-vista-baby sol-sol)) 
+      ((memq %exp '(exit stop logout hej-d�u)) 
        (display "Have a nice day!") (newline))
-      (user-print (eval-%scheme %exp the-global-environment))
+      ;; Expanda %exp innan anrop till eval-%scheme..
+      (let ((expanded-exp (expand-macro %exp)))
+        (display "Expanded: ")
+        (display expanded-exp)
+        (newline)
+        (user-print (eval-%scheme expanded-exp the-global-environment)))
       (newline)
       (display "%==> ")))
 
