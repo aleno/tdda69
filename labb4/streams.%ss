@@ -22,6 +22,9 @@
 (%define (%stream-car stream) (stream (%lambda (a b) a))) ;%car stream))
 (%define (%stream-cdr stream) (stream (%lambda (a b) b))) ;%cdr stream))
 
+;; Definera cons-stream som %lazy-memo eftersom %lazy är så mycket segare,
+;; på grund av att strömen måste beräknas om varje gång i primtals grejen.
+
 (%define (%cons-stream a (b %lazy-memo))
          (%lambda (x) (x a b))) ;%cons a b))
 
