@@ -130,12 +130,6 @@
                     env)
   'ok)
 
-(define (eval-definition exp env)
-  (define-variable! (definition-variable exp)
-                    (eval-%scheme (definition-value exp) env)
-                    env)
-  'ok)
-
 ;;; Representing procedure objects
 ;;; ------------------------------
 
@@ -163,7 +157,7 @@
 ;;; --------------
 
 ;; Macron som ska expanderas
-(define macros '(%let))
+(define macros '(%let %gensym))
 
 ;; Expanderar macron i ett uttryck.
 (define (expand-macro exp)
