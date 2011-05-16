@@ -204,11 +204,12 @@
                           env))
           (loop (cdr varlist)))))
   (loop (eval-%scheme (cadr (dolist-args exp)) env))
-  (lookup-variable-value (caddr (dolist-args exp)) env))
+  (eval-%scheme (caddr (dolist-args exp)) env))
+ ;; OBS: Det kan vara vilket typ av uttryck som helst! Inte bara en variabel.
 
 (remote-eval '(%define (%sumlist 1st)
                        (%define sum 0)
-                       (%dolist (x 1st sum) (%set! sum (%+ sum x)))))
+                       (%dolist (x 1st (display sum)) (%set! sum (%+ sum x)))))
 (remote-eval '(%sumlist (%quote (1 2 3))))
 
 (define (eval-delay exp env)

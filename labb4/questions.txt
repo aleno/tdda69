@@ -1,7 +1,7 @@
 Uppgift 1: Strömmar i en lat evaluator
 ======================================
 
-%cons-stream funkar inte eftersom att %cons är en primitiv procedur, och dessa evaluerar vi alltid argumenten för innan vi kallar dem.
+%cons-stream funkar inte eftersom att %cons är en primitiv procedur, och dessa evaluerar alltid argumenten innan de kallas.
 
 Vår lösning är att implementera %cons som en compound procedure genom att definera följade i %scheme.
 
@@ -9,3 +9,23 @@ Vår lösning är att implementera %cons som en compound procedure genom att define
 (%define (%car x) (x (%lambda (a b) a)))
 (%define (%cdr x) (x (%lambda (a b) b)))
 
+Uppgift 4: Reflektioner över den nya evaluatorn
+===============================================
+
+Makro expansionen kan tas bort eftersom vi kan kalla funktioner som inte beräknar dess argument.
+Detta ger oss möjligheten att faktiskt definera om cond till en funktion med lat parameteröverföring. Detta görs t.ex. genom att traversera cond uttrycket och testa ifall condition delen evaluerar till #t och i sådana fall köra uttrycket därefter.
+
+Implementation i pseudo-scheme:
+
+(define cond (lambda (args %lazy)
+  (define (cond-loop (args)
+   (if (null? args) '()
+   ;; Inget uttryck var sant eller else, så vi ger tomma listan bara för att vi ska ha ett slut.
+     (if (or (eval (car (car args))) (eq? (car (car args)) 'else))
+     ;; Ifall första delen av cond-uttrycket ((= a 4) expr ...) är sant...
+         (eval (cdr (car args)))
+         ;; kör (expr ...)
+        (cond-loop (cdr args)))))
+        ;; Annars loopa vidare med nästa cond-uttryck.
+  (cond-loop (list args)) ;; Gör om uttrycket till en lista
+   ;; så evaluerar vi delar av det i efterhand med eval.

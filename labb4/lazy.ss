@@ -11,8 +11,10 @@
 ;; / AH 2009-11-25
 ;;; --------------------------------------------------------------------------
 ;; (load "TDDA69/Lab/meta_eval.ss")
-;; (load "/home/TDDA69/Lab/r6rs/meta_eval.ss")
-(load "meta_eval.ss")
+(load "/home/TDDA69/Lab/r6rs/meta_eval.ss")
+;; (load "meta_eval.ss")
+
+;; Utökning uppgift 2 för parameteröverföringsmodeller.
 
 (define (procedure-parameters p)
   (map (lambda (x)
@@ -60,7 +62,7 @@
           (procedure-body procedure)
           (extend-environment
            (procedure-parameters procedure)
-           (list-of-maybe-delayed-args ;; Ändrad.
+           (list-of-delayed-args ;; Ändrad.
             (procedure-parameters-model procedure)
             arguments env)
            (procedure-environment procedure))))
@@ -81,21 +83,21 @@
 (define parameter-passing-method 'call-by-name)
 ;(define parameter-passing-method 'call-by-need)
 
-(define (list-of-delayed-args exps params env)
-  (cond ((no-operands? exps)
-	 '())
-	((eq? parameter-passing-method 'call-by-name)
-	 (cons (delay-it (first-operand exps) env)
-	       (list-of-delayed-args (rest-operands exps) (cdr params) env)))
-	((eq? parameter-passing-method 'call-by-need)
-	 (cons (delay-it-memo (first-operand exps) env)  
-	       (list-of-delayed-args (rest-operands exps) (cdr params) env)))
-	(else
-	 (error 'list-of-delayed-args "Invalid parameter passing method."))))
+;(define (list-of-delayed-args exps params env)
+;  (cond ((no-operands? exps)
+;	 '())
+;	((eq? parameter-passing-method 'call-by-name)
+;	 (cons (delay-it (first-operand exps) env)
+;	       (list-of-delayed-args (rest-operands exps) (cdr params) env)))
+;	((eq? parameter-passing-method 'call-by-need)
+;	 (cons (delay-it-memo (first-operand exps) env)  
+;	       (list-of-delayed-args (rest-operands exps) (cdr params) env)))
+;	(else
+;	 (error 'list-of-delayed-args "Invalid parameter passing method."))))
 
 ;; Uppgift 2
-(define (list-of-maybe-delayed-args props exps env)
-  (define (maybe-delay-it prop exp)
+(define (list-of-delayed-args props exps env)
+  (define (delay-it prop exp)
     (cond ((eq? prop '%normal)
            (actual-value exp env))
           ((eq? prop '%lazy)
@@ -104,7 +106,7 @@
            (delay-it-memo exp env))
           (else
            (error 'list-of-delayed-args "Invalid parameter passing method."))))
-  (map maybe-delay-it props exps))
+  (map delay-it props exps))
 
 (define (eval-if exp env)
   (if (true? (actual-value (if-predicate exp) env))
@@ -193,23 +195,33 @@
   (display (circular-print object)))
 
 
-(remote-eval '(%define (%cons a (b %lazy-memo)) (%lambda (x) (x a b))))
-(remote-eval '(%define (%car x) (x (%lambda (a b) a))))
-(remote-eval '(%define (%cdr x) (x (%lambda (a b) b))))
+;; Test av strömmar för uppgift 1.
+;(remote-eval '(%define (%cons a (b %lazy-memo)) (%lambda (x) (x a b))))
+;(remote-eval '(%define (%car x) (x (%lambda (a b) a))))
+;(remote-eval '(%define (%cdr x) (x (%lambda (a b) b))))
 
-;(remote-eval '(%define (%integers-from n) (%cons n (%integers-from (%+ n 1)))))
-;(remote-eval '(%define %integers (%integers-from 1)))
-;(display "mmmmmm....")
-;(newline)
-;(remote-eval '(%car (%cdr (%cdr %integers))))
+;; För uppgift 3 så har vi gjort följande ändringar.
+;(%define (%stream-car stream) (stream (%lambda (a b) a)))
+;(%define (%stream-cdr stream) (stream (%lambda (a b) b)))
+
+;; Definera cons-stream som %lazy-memo eftersom %lazy är så mycket segare,
+;; på grund av att strömen måste beräknas om varje gång i primtals grejen.
+
+;(%define (%cons-stream a (b %lazy-memo))
+;         (%lambda (x) (x a b)))
+
+;; Testa ström operationer.
 (load "streams.%ss")
+
+;; Körexempel för uppgift 2..
 
 (remote-eval '(%define (f1 a b) (%if (%= a 0) 1 b)))
 (remote-eval '(%define (f2 a (b %lazy)) (%if (%= a 0) 1 b)))
 (remote-eval '(%define (f3 a (b %lazy-memo)) (%if (%= a 0) 1 b)))
-;(remote-eval '(f1 1 (%/ 1 0))) ;; division by zero
-;(remote-eval '(f2 1 (%/ 1 0))) ;; thunk
-;(remote-eval '(f3 1 (%/ 1 0))) ;; memo-thunk
+
+;(remote-eval '(f1 1 (%/ 1 0))) ;; -> division by zero
+;(remote-eval '(f2 1 (%/ 1 0))) ;; -> thunk
+;(remote-eval '(f3 1 (%/ 1 0))) ;; -> memo-thunk
 
 ;;; --------------------------------------------------------------------------
 
