@@ -1,0 +1,43 @@
+(father ted al)
+(father ted ned)
+(father ted harry)
+(father al isaac)
+(father harry larry)
+(father harry millie)
+(father harry yovan)
+(mother sarah isaac)
+(male ted)
+(male al)
+(male ned)
+(male harry)
+(male isaac)
+(male larry)
+(female sarah)
+(female millie)
+(female yovan)
+
+;; Regler uppgift 5
+
+(rule (parent ?parent ?person)
+      (or (father ?parent ?person)
+          (mother ?parent ?person)))
+
+(rule (son ?parent ?person)
+      (and (parent ?parent ?person)
+           (male ?person)))
+
+(rule (daughter ?parent ?person)
+      (and (parent ?parent ?person)
+           (female ?person)))
+
+(rule (grandfather ?grand ?person)
+      (and (parent ?parent ?person)
+           (father ?grand ?parent)))
+
+(rule (grandmother ?grand ?person)
+      (and (parent ?parent ?person)
+           (mother ?grand ?parent)))
+
+(rule (grandparent ?grand ?person)
+      (and (parent ?parent ?person)
+           (parent ?grand ?parent)))
