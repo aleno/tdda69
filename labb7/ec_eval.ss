@@ -52,11 +52,9 @@
 
 (define (dolist-ret exp)
   (caddr (cadr exp)))
+
+;; Denna utökar miljön med en variabel..
 (define (dolist-extend-env var val env)
-  (display "extend... ")
-  (display var)
-  (display val)
-  (newline)
   (extend-environment (list var) (list val) env))
 
 ;; Testfunktion för %dolist
@@ -371,7 +369,8 @@ ev-dolist-sequence
   (assign unev (op dolist-var) (reg exp))
  ; (perform
  ;  (op define-variable!) (reg unev) (reg val) (reg env))
-  (assign (reg env)
+  ;; Utöka istället för att skapa styrvariabeln.
+  (assign env
           (op dolist-extend-env) (reg unev) (reg val) (reg env))
   (assign continue (label ev-dolist-continue))
   (assign unev (op dolist-actions) (reg exp))
