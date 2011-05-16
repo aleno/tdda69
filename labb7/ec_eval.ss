@@ -42,34 +42,25 @@
   (tagged-list? exp '%dolist))
 
 (define (dolist-args exp)
-;    (display exp)
-;  (newline)
-;  (display "args") (display (cadr (cadr exp)))
   (cadr (cadr exp)))
 
 (define (dolist-actions exp)
-;  (display exp)
-;  (newline)
-;  (display "actions") (display (cdr (cdr exp)))
   (cdr (cdr exp)))
 
 (define (dolist-var exp)
-;  (display exp)
-;  (newline)
   (car (cadr exp)))
-(define (dolist-ret exp)
-;  (display "ret ")
-;   (display (cddr (cadr exp)))
-;  (newline)
-  (caddr (cadr exp)))
 
-;;((%lambda (sum) (%dolist (x (%list 1 2 3) (%display sum)) (%set! sum (%+ sum x)))) 0)
+(define (dolist-ret exp)
+  (caddr (cadr exp)))
 (define (dolist-extend-env var val env)
   (display "extend... ")
   (display var)
   (display val)
   (newline)
   (extend-environment (list var) (list val) env))
+
+;; Testfunktion för %dolist
+;; ((%lambda (sum) (%dolist (x (%list 1 2 3) (%display sum)) (%set! sum (%+ sum x)))) 0)
 
 ;; Interfacing compiled and interpreted code
 
@@ -159,8 +150,8 @@
    (list 'dolist-args dolist-args)
    (list 'dolist-var dolist-var)
    (list 'dolist-actions dolist-actions)
-   (list 'dolist-extend-env dolist-extend-env)
    (list 'dolist-ret dolist-ret)
+   (list 'dolist-extend-env dolist-extend-env)
 
    ;; operations for dealing with procedures etc
    (list 'true? true?)
@@ -368,32 +359,28 @@ ev-dolist
   (goto (label eval-dispatch))
 ev-dolist-sequence-pre
   (assign unev (reg val))
-;  (restore exp)
   (goto (label ev-dolist-sequence))
 ev-dolist-sequence
   (test (op no-more-exps?) (reg unev))
   (branch (label ev-dolist-end))
-  ;(assign exp (op first-exp) (reg unev))
-  (restore exp)
+  (restore exp) ;; För få register. Hämta exp och lägg tillbaka på stacken.
   (save exp)
   (save unev)
   (save env)
   (assign val (op first-exp) (reg unev))
   (assign unev (op dolist-var) (reg exp))
-  ;(perform
-  ; (op define-variable!) (reg unev) (reg val) (reg env))
-  (assign env (op dolist-extend-env) (reg unev) (reg val) (reg env))
-;  (assign env (op extend-environment)
-;              (reg unev) (reg val) (reg env))
+ ; (perform
+ ;  (op define-variable!) (reg unev) (reg val) (reg env))
+  (assign (reg env)
+          (op dolist-extend-env) (reg unev) (reg val) (reg env))
   (assign continue (label ev-dolist-continue))
   (assign unev (op dolist-actions) (reg exp))
   (save continue)
   (goto (label ev-sequence))
 ev-dolist-continue
-;  (restore continue) ;Återställd av ev-sequence
   (restore env)
   (restore unev)
-  ;(restore exp)
+  
   (assign unev (op rest-exps) (reg unev))
   (goto (label ev-dolist-sequence))
 ev-dolist-end
@@ -401,7 +388,6 @@ ev-dolist-end
   (restore continue)
   (assign exp (op dolist-ret) (reg exp))
   (goto (label eval-dispatch))
-;  (goto (reg continue))
   
 ev-begin
   (assign unev (op begin-actions) (reg exp))
