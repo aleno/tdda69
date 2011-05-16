@@ -36,6 +36,41 @@
 
 (define (no-more-exps? seq) (null? seq))
 
+;; Utökning %dolist
+
+(define (dolist? exp)
+  (tagged-list? exp '%dolist))
+
+(define (dolist-args exp)
+;    (display exp)
+;  (newline)
+;  (display "args") (display (cadr (cadr exp)))
+  (cadr (cadr exp)))
+
+(define (dolist-actions exp)
+;  (display exp)
+;  (newline)
+;  (display "actions") (display (cdr (cdr exp)))
+  (cdr (cdr exp)))
+
+(define (dolist-var exp)
+;  (display exp)
+;  (newline)
+  (car (cadr exp)))
+(define (dolist-ret exp)
+;  (display "ret ")
+;   (display (cddr (cadr exp)))
+;  (newline)
+  (caddr (cadr exp)))
+
+;;((%lambda (sum) (%dolist (x (%list 1 2 3) (%display sum)) (%set! sum (%+ sum x)))) 0)
+(define (dolist-extend-env var val env)
+  (display "extend... ")
+  (display var)
+  (display val)
+  (newline)
+  (extend-environment (list var) (list val) env))
+
 ;; Interfacing compiled and interpreted code
 
 (define (make-compiled-procedure entry env)
@@ -118,6 +153,14 @@
    (list 'no-operands? no-operands?)
    (list 'first-operand first-operand)
    (list 'rest-operands rest-operands)
+   
+   ;; Utökning %dolist
+   (list 'dolist? dolist?)
+   (list 'dolist-args dolist-args)
+   (list 'dolist-var dolist-var)
+   (list 'dolist-actions dolist-actions)
+   (list 'dolist-extend-env dolist-extend-env)
+   (list 'dolist-ret dolist-ret)
 
    ;; operations for dealing with procedures etc
    (list 'true? true?)
@@ -216,6 +259,11 @@ eval-dispatch
   (branch (label ev-if))
   (test (op cond?) (reg exp))
   (branch (label ev-cond))
+  
+  ;; Utökning %dolist
+  (test (op dolist?) (reg exp))
+  (branch (label ev-dolist))
+  
   (test (op lambda?) (reg exp))
   (branch (label ev-lambda))
   (test (op begin?) (reg exp))
@@ -310,7 +358,51 @@ compound-apply
               (reg unev) (reg argl) (reg env))
   (assign unev (op procedure-body) (reg proc))
   (goto (label ev-sequence))
-
+  
+;;Utökning %dolist
+ev-dolist
+  (save continue)
+  (save exp)
+  (assign exp (op dolist-args) (reg exp))
+  (assign continue (label ev-dolist-sequence-pre))
+  (goto (label eval-dispatch))
+ev-dolist-sequence-pre
+  (assign unev (reg val))
+;  (restore exp)
+  (goto (label ev-dolist-sequence))
+ev-dolist-sequence
+  (test (op no-more-exps?) (reg unev))
+  (branch (label ev-dolist-end))
+  ;(assign exp (op first-exp) (reg unev))
+  (restore exp)
+  (save exp)
+  (save unev)
+  (save env)
+  (assign val (op first-exp) (reg unev))
+  (assign unev (op dolist-var) (reg exp))
+  ;(perform
+  ; (op define-variable!) (reg unev) (reg val) (reg env))
+  (assign env (op dolist-extend-env) (reg unev) (reg val) (reg env))
+;  (assign env (op extend-environment)
+;              (reg unev) (reg val) (reg env))
+  (assign continue (label ev-dolist-continue))
+  (assign unev (op dolist-actions) (reg exp))
+  (save continue)
+  (goto (label ev-sequence))
+ev-dolist-continue
+;  (restore continue) ;Återställd av ev-sequence
+  (restore env)
+  (restore unev)
+  ;(restore exp)
+  (assign unev (op rest-exps) (reg unev))
+  (goto (label ev-dolist-sequence))
+ev-dolist-end
+  (restore exp)
+  (restore continue)
+  (assign exp (op dolist-ret) (reg exp))
+  (goto (label eval-dispatch))
+;  (goto (reg continue))
+  
 ev-begin
   (assign unev (op begin-actions) (reg exp))
   (save continue)
@@ -425,4 +517,5 @@ done
 (display "Loaded ec_eval.ss")
 (newline)
 
-
+;(remote-eval '(%define sum 0))
+;(remote-eval '(%dolist (x (1 2 3) (%display sum)) (set! sum (%+ sum x))))
