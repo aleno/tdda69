@@ -1,0 +1,21 @@
+;;v är resterande argument, u är första, och z är resultatet
+;;(rule (append-to-form () ?y ?y)) ;;Append av (y) och () blir (y)
+;;(rule (append-to-form (?u . ?v) ?y (?u . ?z)) ;; ?u (element) consas in i ?z (lista)
+;;      (append-to-form ?v ?y ?z))
+	  
+(rule (member ?e ())
+	  (same ?e ()))
+(rule (member ?e (?u . ?z))
+	  (or (same ?e ?u)
+		  (member ?e ?z)))
+
+(rule (last ?e ())
+	  (dummy))
+(rule (last ?e (?u . ?z))
+	  (or (and (same ?e ?u) (same ?z ()))
+		  (last ?e ?z)))
+
+;;(rule (palindrome (?a . )
+;;(rule (palindrome (?a . ?b . ?c))
+;;		(and (same (last ?a ?c) ;;om c är det sista element
+;;			 (palindrome ?b)

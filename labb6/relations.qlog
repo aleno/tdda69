@@ -22,11 +22,11 @@
       (or (father ?parent ?person)
           (mother ?parent ?person)))
 
-(rule (son ?parent ?person)
+(rule (son ?person ?parent)
       (and (parent ?parent ?person)
            (male ?person)))
 
-(rule (daughter ?parent ?person)
+(rule (daughter ?person ?parent)
       (and (parent ?parent ?person)
            (female ?person)))
 
