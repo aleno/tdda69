@@ -11,8 +11,8 @@
 ;;; Proceduren compile -> compile% / AH 2009-11-25 --------------------------------------------------------------------------
 
 ;; (load "TDDA69/Lab/ec_eval.ss")
-(load "/home/TDDA69/Lab/r6rs/ec_eval.ss")
-;; (load "ec_eval.ss")
+;; (load "/home/TDDA69/Lab/r6rs/ec_eval.ss")
+(load "ec_eval.ss")
 
 ;;; --------------------------------------------------------------------------
 ;;;  Using the compiler
