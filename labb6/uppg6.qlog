@@ -15,7 +15,10 @@
 	  (or (and (same ?e ?u) (same ?z ()))
 		  (last ?e ?z)))
 
-;;(rule (palindrome (?a . )
-;;(rule (palindrome (?a . ?b . ?c))
-;;		(and (same (last ?a ?c) ;;om c är det sista element
-;;			 (palindrome ?b)
+(rule (reverse () ()))
+(rule (reverse (?x . ?rest) ?y)
+      (and (reverse ?rest ?z)
+           (append-to-form ?z (?x) ?y)))
+		   
+(rule (palindrom ?x)
+      (reverse ?x ?x))
