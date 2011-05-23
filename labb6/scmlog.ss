@@ -404,6 +404,23 @@
 
 (put 'not 'qeval negate)
 
+;; Utökning uppgift 7: unique
+
+(define (uniquely-asserted a frame-stream)
+  (flatmap
+   (lambda (frame)
+     (let ((contents (qeval (car a) (singleton frame))))
+       (cond ((stream-null? contents)
+              the-empty-stream)
+             ((stream-null? (stream-cdr contents))
+              contents)
+             (else
+              the-empty-stream))))
+   frame-stream))
+
+;; Den triviala delen. :)
+(put 'unique 'qeval uniquely-asserted)
+
 (define (lisp-value call frame-stream)
   (flatmap
    (lambda (frame)
