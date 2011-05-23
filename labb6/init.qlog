@@ -1,0 +1,5 @@
+(load "scmlog.ss")
+(query-driver-loop)
+(qload "ibm-db.qlog")
+(qload "graph.qlog")
+(qload "uppg6.qlog")

@@ -1,7 +1,7 @@
 ;;v är resterande argument, u är första, och z är resultatet
-;;(rule (append-to-form () ?y ?y)) ;;Append av (y) och () blir (y)
-;;(rule (append-to-form (?u . ?v) ?y (?u . ?z)) ;; ?u (element) consas in i ?z (lista)
-;;      (append-to-form ?v ?y ?z))
+(rule (append-to-form () ?y ?y)) ;;Append av (y) och () blir (y)
+(rule (append-to-form (?u . ?v) ?y (?u . ?z)) ;; ?u (element) consas in i ?z (lista)
+      (append-to-form ?v ?y ?z))
 	  
 (rule (member ?e ())
 	  (same ?e ()))
@@ -22,3 +22,14 @@
 		   
 (rule (palindrom ?x)
       (reverse ?x ?x))
+	  
+;;Graph: c->f->i->a
+
+(rule (connected ?x ?y)
+	  (or (connected-it ?x ?y ())
+	      (connected-it ?y ?x ())))
+(rule (connected-it ?x ?y ?tries)
+	  (or (edge ?x ?y)
+	      (and (not (member ?z ?tries))
+		       (edge ?x ?z)
+			   (connected-it ?z ?y (?z . ?tires)))))
