@@ -3,33 +3,57 @@
 (rule (append-to-form (?u . ?v) ?y (?u . ?z)) ;; ?u (element) consas in i ?z (lista)
       (append-to-form ?v ?y ?z))
 	  
+(rule (same ?x ?x))
+
 (rule (member ?e ())
-	  (same ?e ()))
+      (same ?e ()))
 (rule (member ?e (?u . ?z))
-	  (or (same ?e ?u)
-		  (member ?e ?z)))
+      (or (same ?e ?u)
+          (member ?e ?z)))
 
 (rule (last ?e ())
-	  (dummy))
+      (dummy))
+
 (rule (last ?e (?u . ?z))
-	  (or (and (same ?e ?u) (same ?z ()))
-		  (last ?e ?z)))
+      (or (and (same ?e ?u) (same ?z ()))
+          (last ?e ?z)))
 
 (rule (reverse () ()))
 (rule (reverse (?x . ?rest) ?y)
       (and (reverse ?rest ?z)
            (append-to-form ?z (?x) ?y)))
-		   
+
 (rule (palindrom ?x)
       (reverse ?x ?x))
-	  
+
 ;;Graph: c->f->i->a
 
-(rule (connected ?x ?y)
-	  (or (connected-it ?x ?y ())
-	      (connected-it ?y ?x ())))
-(rule (connected-it ?x ?y ?tries)
-	  (or (edge ?x ?y)
-	      (and (not (member ?z ?tries))
-		       (edge ?x ?z)
-			   (connected-it ?z ?y (?z . ?tires)))))
+;; För dubbelriktining i grafen.
+(rule (connection ?x ?y)
+      (or (edge ?x ?y)
+          (edge ?y ?x)))
+
+;; Förslag 1.
+;; Finner anslutning givet vi kan hitta en väg.
+(rule (connected ?a ?b)
+      (path ?a ?b (?a) ?path))
+
+;; Finner alla vägar mellan ?a och ?b.
+(rule (path ?a ?b ?path (?b . ?path))
+      (and (connection ?a ?b)
+           (not (member ?b ?path))))
+
+(rule (path ?a ?b ?visited ?path)
+      (and (connection ?a ?c)
+           (not (same c? ?b))
+           (not (member ?c ?visited))
+           (path ?c ?b (?c . ?visited) ?path)))
+      
+;; Förslag 2
+;; Finner anslutning givet de finns kopplingar, vägen ointressant.
+(rule (connected2 ?x ?y ?tries)
+      (or (connection ?x ?y)
+          (and (connection ?x ?z)
+               (not (same ?z ?y))
+               (not (member ?z ?tries))
+               (connected2 ?z ?y (?z . ?tries)))))
