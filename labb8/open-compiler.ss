@@ -100,7 +100,7 @@
            (apply proc (map (lambda (x) (if (quoted? x) (cadr x) x))
                                           (operands exp)))))))
 
-(define (compile-application2 exp target linkage c-t-env)
+(define (compile-application exp target linkage c-t-env)
   (cond
     ((primitive-application? exp)
      (compile-primitive-application exp target linkage c-t-env))
@@ -109,13 +109,25 @@
     (else
      (error "Unkown expression typ -- COMPILE" exp))))
 
+(define (spread-arguments a b c-t-env)
+  (list (compile% a 'arg1 'next c-t-env) (compile% b 'arg2 'next c-t-env)))
+
 (define (compile-primitive-application exp target linkage c-t-env)
-  (let ((pp (preprocess exp c-t-env)))
-    (display exp)
-    (display pp)
-    (display "CPA")
-    (newline)
-    pp))
+  (display "WEAE")
+  (if (= (length (operands exp)) 2)
+      (let ((args (spread-arguments (car (operands exp)) (cadr (operands exp)) c-t-env)))
+        (end-with-linkage
+         linkage
+         (append-instruction-sequences
+          (car args)
+          (preserving '(arg1)
+                     (cadr args)
+                     (make-instruction-sequence
+                      '(arg1 arg2 proc)
+                      (list target)
+                      `(;(assign proc (op lookup-variable-value) (const ,(operator exp)) (reg env))
+                        (assign ,target (op apply-primitive-procedure) (const ,(operator exp)) (reg arg1) (reg arg2))))))))
+      (error 'compile-primitive-application "Emm. endast binära funktioner.. =(")))
 
 (define (compile-normal-application exp target linkage c-t-env)
   (let ((proc-code (compile% (operator exp) 'proc 'next c-t-env))
