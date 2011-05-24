@@ -42,29 +42,39 @@
   (car (cddadr exp)))
 
 (define (compile-dolist-loop exp target linkage c-t-env)
+  (end-with-linkage linkage
   (preserving
-   '(env continue)
+   '(continue)
    (append-instruction-sequences
+    (compile% (dolist-args exp) 'argl 'next c-t-env)
     (make-instruction-sequence
-     '(env argl continue) '(env val continue)
+     '(argl) '(continue)
      `(dolist-start
        (test (op no-more-exps?) (reg argl))
-       (branch (label dolist-end))
-       (assign continue (label dolist-start))
-       (assign val (op first-exp) (reg argl))
-       (assign env
-               (op extend-environment)
-               (const (,(dolist-var exp)))
-               (reg val)
-               (reg env))))
-    (compile-sequence (dolist-body exp) 'val 'next 
-                      (extend-compile-time-env
-                       (list (dolist-var exp))
-                       c-t-env)))
-   (append-instruction-sequences
-    (make-instruction-sequence '(env continue) '()
-                               `(dolist-end))
-    (compile% (dolist-term-exp exp) target linkage c-t-env))))
+       (branch (label dolist-end))))
+    (preserving
+     '(env argl)
+     (end-with-linkage 'dolist-start
+     (append-instruction-sequences
+      (make-instruction-sequence
+       '(env argl continue) '(env argl val continue)
+       `(;(assign continue (label dolist-start))
+         (assign val (op first-exp) (reg argl))
+         (assign env
+                 (op extend-environment)
+                 (const (,(dolist-var exp)))
+                 (reg val)
+                 (reg env))
+         (assign argl (op rest-exps) (reg argl))))
+      (compile-sequence (dolist-body exp) 'val 'next 
+                        (extend-compile-time-env
+                         (list (dolist-var exp))
+                         c-t-env))))
+      (make-instruction-sequence
+       '(continue env argl) '(env)
+       `(dolist-end))))
+                
+    (compile% (dolist-term-exp exp) target 'next c-t-env))))
     
 ;(define (analyze-dolist exp)
 ;  (let ((varargs (cadr exp))
