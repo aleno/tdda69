@@ -1,5 +1,15 @@
 (load "compiler.ss")
 
+(define (compile-and-go expression)
+  (let ((instructions
+         (assemble (statements
+                    (compile% (preprocess expression) 'val 'return initial-c-t-env))
+                   eceval)))
+    ;; (set! the-global-environment (setup-environment))
+    (set-register-contents! eceval 'val instructions)
+    (set-register-contents! eceval 'flag #t)
+    (start eceval)))
+
 (define (preprocess exp p-t-env)
   (cond ((self-evaluating? exp) exp)
         ((quoted? exp) exp)
@@ -21,7 +31,7 @@
   (let ((p-t-env (cons (cdar (operands exp)) p-t-env)))
     `(%define ,(car (operands exp)) ,@(map (lambda (x) (preprocess x p-t-env)) (cdr (operands exp))))))
 (define (preprocess-if exp p-t-env)
-  ;; Eventuellt optimera (%if #t exp1 exp2) -> exp1
+  ;; Optimera (%if #t exp1 exp2) -> exp1
   (let ((condition (preprocess (car (operands exp)) p-t-env))
         (exptected (preprocess (cadr (operands exp)) p-t-env))
         (alternativ (preprocess (caddr (operands exp)) p-t-env)))
@@ -33,7 +43,6 @@
            `(%if ,@(map (lambda (x) (preprocess x p-t-env)) (operands exp)))))))
 
 (define (preprocess-lambda exp p-t-env)
-  ;; Eventuellt optimera (%if #t exp1 exp2) -> exp1
   (let ((p-t-env (cons (lambda-parameters exp) p-t-env)))
     (display (format "p-t-env: ~a~%" p-t-env))
     `(%lambda ,(lambda-parameters exp) ,@(map (lambda (x) (preprocess x p-t-env)) (lambda-body exp)))))
@@ -65,7 +74,7 @@
 (define (get-primitive-implementation proc)
   (define (loop l)
     (if (null? l)
-        'aaaaaa
+        '*no-primitive-impl-found*
         (if (eq? (caar l) proc)
             (cadr (car l))
             (loop (cdr l)))))
@@ -84,13 +93,9 @@
     (display (format "I got ~a~%" exp))
     (cond ((not const-args) exp) ;; Ignorera om vi har något annat än constant.
           ((eq? proc cons)
-           ;(if quote-args
            (display (operands exp)) (newline)
-                    
                `(%quote ,(apply cons (map (lambda (x) (if (quoted? x) (cadr x) x))
                                           (operands exp))))
-            ;   (apply cons (map (lambda (x) (if (quoted? x) (cadr x) x))
-             ;                   (operands exp)))))
                )
           ((eq? proc list)
            `(%quote ,(apply list (map (lambda (x) (if (quoted? x) (cadr x) x))
@@ -113,21 +118,22 @@
   (list (compile% a 'arg1 'next c-t-env) (compile% b 'arg2 'next c-t-env)))
 
 (define (compile-primitive-application exp target linkage c-t-env)
-  (display "WEAE")
   (if (= (length (operands exp)) 2)
       (let ((args (spread-arguments (car (operands exp)) (cadr (operands exp)) c-t-env)))
         (end-with-linkage
          linkage
          (append-instruction-sequences
           (car args)
-          (preserving '(arg1)
+          (preserving '(arg1 proc)
                      (cadr args)
                      (make-instruction-sequence
                       '(arg1 arg2 proc)
-                      (list target)
-                      `(;(assign proc (op lookup-variable-value) (const ,(operator exp)) (reg env))
-                        (assign ,target (op apply-primitive-procedure) (const ,(operator exp)) (reg arg1) (reg arg2))))))))
-      (error 'compile-primitive-application "Emm. endast binära funktioner.. =(")))
+                      (list target 'proc)
+                      `((assign ,target
+                                (op ,(operator exp))
+                                (reg arg1)
+                                (reg arg2))))))))
+      (error 'compile-primitive-application "Emm. endast binära funktioner för tillfället.. =(")))
 
 (define (compile-normal-application exp target linkage c-t-env)
   (let ((proc-code (compile% (operator exp) 'proc 'next c-t-env))
@@ -140,6 +146,7 @@
       (construct-arglist operand-codes)
       (compile-procedure-call target linkage c-t-env)))))
 
+;; Makro som jämnför om en funktion resulterat ett resultat som matchar ett förväntat värde eller itne.
 (define-macro (test result exprected)
   `(if (equal? ,result ,exprected)
        'ok
