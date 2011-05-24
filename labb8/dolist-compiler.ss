@@ -27,10 +27,6 @@
         (else
          (error 'compile "Unknown expression type: ~s" exp))))
 
-(define (compile-dolist exp target linkage c-t-env)
-  (compile-dolist-loop exp target linkage c-t-env)
-  )
-
 (define (dolist-body exp)
   (cddr exp))
 
@@ -41,52 +37,52 @@
 (define (dolist-term-exp exp)
   (car (cddadr exp)))
 
-(define (compile-dolist-loop exp target linkage c-t-env)
-  (end-with-linkage linkage
-  (preserving
-   '(continue)
-   (append-instruction-sequences
-    (compile% (dolist-args exp) 'argl 'next c-t-env)
-    (make-instruction-sequence
-     '(argl) '(continue)
-     `(dolist-start
-       (test (op no-more-exps?) (reg argl))
-       (branch (label dolist-end))))
-(end-with-linkage 'dolist-start
-    (preserving
-     '(env)
-     ;(end-with-linkage
-     ; 'dolist-start
-     (append-instruction-sequences
-     ;(preserving '(argl)
+(define (compile-dolist exp target linkage c-t-env)
+  (let ((start-label (make-label 'dolist-start))
+        (end-label (make-label 'dolist-end)))
+    (end-with-linkage
+     linkage
+     (preserving
+      '(continue)
+      (append-instruction-sequences
+       (compile% (dolist-args exp) 'argl 'next c-t-env)
        (make-instruction-sequence
-        '(env argl continue) '(env argl val continue)
-        `(;(assign continue (label dolist-start))
-          (assign val (op first-exp) (reg argl))
-          (assign val (op list) (reg val))
-          (assign env
-                  (op extend-environment)
-                 (const (,(dolist-var exp)))
-                 (reg val)
-                 (reg env))))
-;          (assign argl (op rest-exps) (reg argl))))
-(preserving '(argl)
-       (compile-sequence (dolist-body exp) 'val 'next 
-                         (extend-compile-time-env
-                          (list (dolist-var exp))
-                          c-t-env))
-       (make-instruction-sequence '(argl) '(argl)
-                                  `((assign argl (op rest-exps) (reg argl)))))
-       )
-      (make-instruction-sequence
-       '(continue env argl) '(env)
-       `())))); (dolist-end)))))
-    (append-instruction-sequences
-     (make-instruction-sequence
-      '() '()
-      `(dolist-end))
-     (compile% (dolist-term-exp exp) target 'next c-t-env)))))
-    
+        '(argl) '(continue)
+        `(,start-label
+          (test (op no-more-exps?) (reg argl))
+          (branch (label ,end-label))))
+       (end-with-linkage
+        start-label
+        (preserving
+         '(env)
+         (append-instruction-sequences
+          (make-instruction-sequence
+           '(env argl continue) '(env argl val continue)
+           `(
+             (assign val (op first-exp) (reg argl))
+             (assign val (op list) (reg val))
+             (assign env
+                     (op extend-environment)
+                     (const (,(dolist-var exp)))
+                     (reg val)
+                     (reg env))))
+          (preserving '(argl)
+                      (compile-sequence (dolist-body exp) 'val 'next 
+                                        (extend-compile-time-env
+                                         (list (dolist-var exp))
+                                         c-t-env))
+                      (make-instruction-sequence '(argl) '(argl)
+                                                 `((assign argl (op rest-exps) (reg argl))))))
+         
+         (make-instruction-sequence
+          '(continue env argl) '(env)
+          `()))))
+      (append-instruction-sequences
+       (make-instruction-sequence
+        '() '()
+        `(,end-label))
+       (compile% (dolist-term-exp exp) target 'next c-t-env))))))
+  
 ;(define (analyze-dolist exp)
 ;  (let ((varargs (cadr exp))
 ;        (list (analyze (cadr (cadr exp))))
