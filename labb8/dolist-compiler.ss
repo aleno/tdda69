@@ -102,3 +102,10 @@
 ;                                        env))
 ;              (loop-dolist (cdr varlist)))))
 ;      (loop-dolist (list env)))))
+
+;; (compile-and-go '(%begin (%define x 1) (%dolist (%+ (%list %+ %* %-) x) (%set! x (%+ x 2)))))
+
+; total pushes = 10 maximum depth = 4
+; number of executed instructions = 95
+; 4
+; %==>
